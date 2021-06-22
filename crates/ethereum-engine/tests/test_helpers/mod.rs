@@ -97,6 +97,7 @@ pub async fn start_eth_engine(
         asset_scale: 18,
         poll_frequency: 1000,
         watch_incoming: true,
+        contract_address: "".to_string()
     })
     .await
 }

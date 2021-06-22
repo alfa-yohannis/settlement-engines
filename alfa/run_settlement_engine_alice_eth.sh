@@ -8,4 +8,5 @@ cargo run --bin ilp-settlement-ethereum -- \
   --redis_url redis://127.0.0.1:6379/0 \
   --asset_scale 18 \
   --settlement_api_bind_address 127.0.0.1:3000 \
-  --watch_incoming
+  --watch_incoming \
+  --contract_address 0x25790e11EDcb53F009Fe10823C83bd9aCD0baE2D

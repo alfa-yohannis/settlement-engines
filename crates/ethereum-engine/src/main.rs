@@ -13,7 +13,6 @@ use ilp_settlement_ethereum::engine::redis_bin::{run_ethereum_engine, EthereumLe
 #[tokio::main]
 async fn main() {
     env_logger::init();
-
     // The naming convention of arguments
     //
     // - URL vs URI
@@ -30,7 +29,7 @@ async fn main() {
     // - Addresses to which other services are bound
     //     - `xxx_bind_address`
     let mut app = App::new("ethereum-engine")
-        .about("ALFA: Ethereum settlement engine which performs ledger (layer 1) transactions")
+        .about("Alfa: Ethereum settlement engine which performs ledger (layer 1) transactions")
         .version(crate_version!())
         // TODO remove this line once this issue is solved:
         // https://github.com/clap-rs/clap/issues/1536
@@ -95,6 +94,11 @@ async fn main() {
                 .long("watch_incoming")
                 .default_value("true")
                 .help("Launch a blockchain watcher that listens for incoming transactions and notifies the connector upon sufficient confirmations"),
+            Arg::with_name("contract_address")
+                .long("contract_address")
+                .takes_value(true)
+                .default_value("")
+                .help("The address of the smart contract that receives Ethereum from peers"),
         ]);
 
     let mut config = get_env_config("ilp");

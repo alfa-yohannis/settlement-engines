@@ -41,6 +41,10 @@ use interledger_settlement::core::{
 };
 use secrecy::Secret;
 
+// alfa
+use hex::FromHex;
+//---
+
 const MAX_RETRIES: usize = 10;
 const ETH_CREATE_ACCOUNT_PREFIX: &[u8] = b"ilp-ethl-create-account-message";
 
@@ -104,6 +108,9 @@ pub struct EthereumLedgerSettlementEngineBuilder<'a, S, Si, A> {
     asset_scale: Option<u8>,
     watch_incoming: bool,
     account_type: PhantomData<A>,
+
+    //alfa
+    contract_address: Option<&'a str>,
 }
 
 impl<'a, S, Si, A> EthereumLedgerSettlementEngineBuilder<'a, S, Si, A>
@@ -130,9 +137,16 @@ where
             asset_scale: None,
             watch_incoming: false,
             account_type: PhantomData,
+            contract_address: None,
         }
     }
 
+    // begin alfa
+    pub fn contract_address(&mut self, contract_address: &'a str) -> &mut Self {
+        self.contract_address = Some(contract_address);
+        self
+    }
+    // end alfa
     pub fn token_address(&mut self, token_address: Option<Address>) -> &mut Self {
         self.token_address = token_address;
         self
@@ -205,14 +219,37 @@ where
         } else {
             18
         };
+        let contract_address = if let Some(ref contract_address) = self.contract_address {
+            contract_address
+        } else {
+            ""
+        };
 
         let (eloop, transport) = Http::new(ethereum_endpoint).unwrap();
         eloop.into_remote();
         let web3 = Web3::new(transport);
-        let address = Addresses {
+        let mut address = Addresses {
             own_address: self.signer.address(),
             token_address: self.token_address,
         };
+
+        //alfa replace account address with contract address if contract_address is not empty
+        println!(
+            "Account Address = {:?}",
+            address.own_address.as_fixed_bytes()
+        );
+        println!("Account Address = {:?}", address.own_address);
+        if !self.contract_address.unwrap().trim().is_empty() {
+            // let address_bytes =  hex::decode(contract_address.trim_start_matches("0x")).expect("Decoding failed");
+            let address_bytes = <[u8; 20]>::from_hex(contract_address.trim_start_matches("0x"))
+                .expect("Decoding failed");
+            // let mut out = [0; 20];
+            // out.copy_from_slice(address_bytes);
+            address.own_address = Address::from(address_bytes);
+            println!("Contract Address = {:?}", address_bytes);
+            println!("Contract Address = {:?}", address.own_address);
+            //----
+        }
 
         let store = self.store.clone();
         let signer = self.signer.clone();
@@ -680,28 +717,33 @@ where
         .await?;
         let payment_details = parse_body_into_payment_details(resp).await?;
 
-        let data = prefixed_message(challenge_clone);
-        let challenge_hash = Sha3::digest(&data);
-        let recovered_address = payment_details.signature.recover(&challenge_hash);
+        // ALFA: I commented this so that sender doesn't have to check
+        // if the receiver's account address since it has been replaced with the contract address
+
+        // let data = prefixed_message(challenge_clone);
+        // let challenge_hash = Sha3::digest(&data);
+        // let recovered_address = payment_details.signature.recover(&challenge_hash);
         trace!("Received payment details {:?}", payment_details);
-        match recovered_address {
-            Ok(recovered_address) => {
-                if recovered_address.as_bytes() != &payment_details.to.own_address.as_bytes()[..] {
-                    let error_msg = format!(
-                        "Recovered address did not match: {:?}. Expected {:?}",
-                        recovered_address.to_string(),
-                        payment_details.to
-                    );
-                    error!("{}", error_msg);
-                    return Err(ApiError::internal_server_error().detail(error_msg));
-                }
-            }
-            Err(error_msg) => {
-                let error_msg = format!("Could not recover address {:?}", error_msg);
-                error!("{}", error_msg);
-                return Err(ApiError::internal_server_error().detail(error_msg));
-            }
-        };
+
+        // match recovered_address {
+        //     Ok(recovered_address) => {
+        //         if recovered_address.as_bytes() != &payment_details.to.own_address.as_bytes()[..] {
+        //             let error_msg = format!(
+        //                 "Recovered address did not match: {:?}. Expected {:?}",
+        //                 recovered_address.to_string(),
+        //                 payment_details.to
+        //             );
+        //             error!("{}", error_msg);
+        //             return Err(ApiError::internal_server_error().detail(error_msg));
+        //         }
+        //     }
+        //     Err(error_msg) => {
+        //         let error_msg = format!("Could not recover address {:?}", error_msg);
+        //         error!("{}", error_msg);
+        //         return Err(ApiError::internal_server_error().detail(error_msg));
+        //     }
+        // };
+        //----
 
         // ACK BACK
         if let Some(challenge) = payment_details.challenge {
@@ -713,6 +755,7 @@ where
                 // and no challenge, since we already sent
                 // them one earlier
                 let ret = PaymentDetailsResponse::new(self.address, signature, None);
+
                 serde_json::to_string(&ret).unwrap()
             };
             let idempotency_uuid = Uuid::new_v4().to_hyphenated().to_string();
@@ -806,10 +849,10 @@ where
         // provided account.
         // If we received a SYN, we respond with a signed message
         if let Ok(req) = serde_json::from_slice::<PaymentDetailsRequest>(&body) {
-            // debug!(
-            //     "Received account creation request. Responding with our account's details {} {:?}",
-            //     account_id, address
-            // );
+            debug!(
+                "Received account creation request. Responding with our account's details {} {:?}",
+                account_id, address
+            );
             // Otherwise, we save the received address
             let data = prefixed_message(req.challenge);
             let signature = self.signer.sign_message(&data);
@@ -820,6 +863,7 @@ where
                 (*guard).insert(account_id, challenge.clone());
                 // Respond with our address, a signature, and our own challenge
                 let ret = PaymentDetailsResponse::new(address, signature, Some(challenge));
+                println!("To = {:?}", ret.to.own_address);
                 serde_json::to_vec(&ret).unwrap()
             };
             Ok(ApiResponse::Data(resp.into()))
@@ -1025,6 +1069,9 @@ pub mod redis_bin {
         .poll_frequency(opt.poll_frequency)
         .watch_incoming(opt.watch_incoming)
         .token_address(opt.token_address)
+        // alfa
+        .contract_address(&opt.contract_address)
+        //---
         .connect()
         .await;
 
@@ -1053,6 +1100,7 @@ pub mod redis_bin {
         pub asset_scale: u8,
         pub poll_frequency: u64,
         pub watch_incoming: bool,
+        pub contract_address: String,
     }
 
     fn deserialize_redis_connection<'de, D>(deserializer: D) -> Result<ConnectionInfo, D::Error>
