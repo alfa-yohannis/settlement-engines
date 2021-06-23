@@ -9,4 +9,4 @@ cargo run --bin ilp-settlement-ethereum -- \
   --asset_scale 18 \
   --settlement_api_bind_address 127.0.0.1:3000 \
   --watch_incoming \
-  --contract_address 0x25790e11EDcb53F009Fe10823C83bd9aCD0baE2D
+  --contract_address 0x50Dd787a2768E0a5cbB057b94ee1cfEAf84556E5
