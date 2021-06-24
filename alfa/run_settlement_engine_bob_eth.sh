@@ -1,5 +1,7 @@
 # BOB ETH
-cargo run --bin ilp-settlement-ethereum -- \
+export RUST_LOG=interledger=debug
+
+cargo run --all-features --verbose --bin ilp-settlement-ethereum -- \
   --private_key 0cf64d77c19c598bd2151dc0e6f4464955f7a682021cbf26e95afc3eaefd373c \
   --confirmations 0 \
   --poll_frequency 1000 \
