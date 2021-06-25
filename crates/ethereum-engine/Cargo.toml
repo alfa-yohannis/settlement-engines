@@ -1,7 +1,7 @@
 [package]
 name = "ilp-settlement-ethereum"
-description = "Ethereum L1 Settlement Engine for the Interledger Settlement Architecture"
-version = "0.1.0.smart_contract"
+description = "Modified Ethereum L1 Settlement Engine for the Interledger Settlement Architecture (Direct Smart Contract Transfer)"
+version = "0.1.0"
 authors = ["Georgios Konstantopoulos <me@gakonst.com>", "Alfa Yohannis <alfa.yohannis@tutanota.com"]
 license = "Apache-2.0"
 edition = "2018"

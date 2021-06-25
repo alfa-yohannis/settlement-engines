@@ -29,7 +29,7 @@ async fn main() {
     // - Addresses to which other services are bound
     //     - `xxx_bind_address`
     let mut app = App::new("ethereum-engine")
-        .about("Alfa: Ethereum settlement engine which performs ledger (layer 1) transactions")
+        .about("Philanthropy: Modified Ethereum settlement engine which performs ledger (layer 1) transactions (Direct Smart Contract Transfer)")
         .version(crate_version!())
         // TODO remove this line once this issue is solved:
         // https://github.com/clap-rs/clap/issues/1536
