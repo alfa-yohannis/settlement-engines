@@ -1,7 +1,7 @@
 # ALICE
 export RUST_LOG=interledger=debug
 
-cargo run --all-features --verbose --bin ilp-settlement-ethereum -- \
+cargo run --bin ilp-settlement-ethereum -- \
   --private_key e9c10413ba16e0d4dfad33a820f0a09fceca96b3e181a0db417a32bd2a55d8a1 \
   --confirmations 0 \
   --poll_frequency 1000 \
