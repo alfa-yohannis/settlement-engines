@@ -1,4 +1,4 @@
-#BOB XRP
+#CONNECTOR XRP
 DEBUG=settlement* \
   CONNECTOR_URL=http://127.0.0.1:8771 \
   REDIS_URI=redis://127.0.0.1:6379/5 \
